@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
    
     checkArguments(argc);
     char *fileContent = getFile(argv[1]);
-    lexicalAnalysis(fileContent, "stdout");
+    lexicalAnalysis(fileContent, "out/lexical.out");
 
     //crtTk = tokens;
     
