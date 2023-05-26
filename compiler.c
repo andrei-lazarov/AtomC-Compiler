@@ -4,41 +4,20 @@
 #include <string.h>
 #include  <ctype.h>
 
-#include "token.h"  // token structure
-#include "lexicalAnalyzer.h"
-#include "syntacticAnalyzer.h"
+#include "lib/token.h"  
+#include "lib/errors.h"
+#include "lib/input.h"
+#include "lib/lexicalAnalyzer.h"
+//#include "lib/syntacticAnalyzer.h"
 
-int main() {
+int main(int argc, char *argv[]) {
    
-    char *fileContent = 0;
-    long fileLength;
-    FILE *filePointer = fopen ("input.txt", "r");
+    checkArguments(argc);
+    char *fileContent = getFile(argv[1]);
+    lexicalAnalysis(fileContent, "stdout");
 
-    if (filePointer) {
-        fseek (filePointer, 0, SEEK_END);
-        fileLength = ftell (filePointer);
-        fseek (filePointer, 0, SEEK_SET);
-        fileContent = malloc (fileLength+1);
-        if (fileContent) {
-            fread (fileContent, 1, fileLength, filePointer);
-            fileContent[fileLength]=0;}
-        fclose (filePointer);
-    }
-
-    if (fileContent) {
-        //printf("%s", fileContent);
-        pCrtCh = fileContent;
-        while (1) {
-            int output = getNextToken();
-            if (output == END) break; 
-        }
-        
-        showTokens();
-        putchar('\n');
-
-        crtTk = tokens;
-    }
-
-
-   return 0;
+    //crtTk = tokens;
+    
+    freeTokens();
+    return 0;
 }

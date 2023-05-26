@@ -3,12 +3,35 @@
 
 #define SAFEALLOC(var,Type) if((var=(Type*)malloc(sizeof(Type)))==NULL)err("not enough memory");
 
-enum{ID, END, CT_INT, ASSIGN, EQUAL, BREAK, CHAR, DOUBLE, ELSE, FOR, IF, INT, RETURN, STRUCT, VOID, WHILE, CT_REAL, CT_CHAR, CT_STRING, COMMA, SEMICOLON, LPAR, RPAR, LBRACKET, RBRACKET, LACC, RACC, ADD, SUB, MUL, DIV, DOT, AND, OR, NOT, NOTEQ, LESS, LESSEQ, GREATER, GREATEREQ}; // tokens codes
+enum {  //token codes
+    ID, END, BREAK, RETURN,                         
+    FOR, WHILE, IF, ELSE,                           //keywords
+    INT, DOUBLE, CHAR, STRUCT, VOID,                //data types
+    CT_INT, CT_REAL, CT_CHAR, CT_STRING,            //constants
+    COMMA, SEMICOLON,                               
+    LPAR, RPAR, LBRACKET, RBRACKET, LACC, RACC,     //delimiters
+    ASSIGN, ADD, SUB, MUL, DIV,                     
+    DOT,                                            
+    AND, OR, NOT,                                   
+    EQUAL, NOTEQ, LESS, LESSEQ, GREATER, GREATEREQ  //operators
+};
 
-Token *lastToken = NULL;
-Token *tokens = NULL;
-char *pCrtCh = 0;
-int line;
+Token *lastToken   = NULL;
+Token *tokens      = NULL;
+char  *pCrtCh      = 0;
+int    currentLine = 1;
+
+void freeTokens(){
+    Token *tk = tokens;
+    Token *aux;
+    while(tk){
+        aux = tk;
+        tk = tk->next;
+        if (aux->code == ID || aux->code == CT_STRING)
+            free(aux->text);
+        free(aux);
+    }
+}
 
 char *createString (const char *start, const char *end) {
 
@@ -22,31 +45,11 @@ char *createString (const char *start, const char *end) {
     return newStr;
 }
 
-void err(const char *fmt,...) {
-    va_list va;
-    va_start(va,fmt);
-    fprintf(stderr,"error: ");
-    vfprintf(stderr,fmt,va);
-    fputc('\n',stderr);
-    va_end(va);
-    exit(-1);
-}
-
-void tkerr(const Token *tk,const char *fmt,...) {
-    va_list va;
-    va_start(va,fmt);
-    fprintf(stderr,"error in line %d: ",tk->line);
-    vfprintf(stderr,fmt,va);
-    fputc('\n',stderr);
-    va_end(va);
-    exit(-1);
-}
-
 Token *addTk(int code) {
     Token *tk;
     SAFEALLOC(tk,Token);
     tk->code=code;
-    tk->line=line;
+    tk->line=currentLine;
     tk->next=NULL;
     if(lastToken){
         lastToken->next=tk;
@@ -82,7 +85,7 @@ int getNextToken() {
                     pCrtCh++; // consume the character and remains in state 0
                 }
                 else if(ch=='\n'){ // handled separately in order to update the current line
-                    line++;
+                    currentLine++;
                     pCrtCh++;
                 }
                 else if(ch==0){ // the end of the input string
@@ -220,17 +223,17 @@ int getNextToken() {
             case 2:
                 nCh = pCrtCh - pStartCh; // the id length
                 // keywords tests
-                if(nCh==5&&!memcmp(pStartCh,"break",5)) tk=addTk(BREAK);
-                else if(nCh==4&&!memcmp(pStartCh,"char",4)) tk=addTk(CHAR);
-                else if(nCh==6&&!memcmp(pStartCh,"double",6)) tk=addTk(DOUBLE);
-                else if(nCh==4&&!memcmp(pStartCh,"else",4)) tk=addTk(ELSE);
-                else if(nCh==3&&!memcmp(pStartCh,"for",3)) tk=addTk(FOR);
-                else if(nCh==2&&!memcmp(pStartCh,"if",2)) tk=addTk(IF);
-                else if(nCh==3&&!memcmp(pStartCh,"int",3)) tk=addTk(INT);
-                else if(nCh==6&&!memcmp(pStartCh,"return",6)) tk=addTk(RETURN);
-                else if(nCh==6&&!memcmp(pStartCh,"struct",6)) tk=addTk(STRUCT);
-                else if(nCh==4&&!memcmp(pStartCh,"void",4)) tk=addTk(VOID);
-                else if(nCh==5&&!memcmp(pStartCh,"while",5)) tk=addTk(WHILE);
+                if      (nCh==5&&!memcmp(pStartCh,"break",  5))    tk=addTk(BREAK);
+                else if (nCh==4&&!memcmp(pStartCh,"char",   4))     tk=addTk(CHAR);
+                else if (nCh==6&&!memcmp(pStartCh,"double", 6))   tk=addTk(DOUBLE);
+                else if (nCh==4&&!memcmp(pStartCh,"else",   4))     tk=addTk(ELSE);
+                else if (nCh==3&&!memcmp(pStartCh,"for",    3))      tk=addTk(FOR);
+                else if (nCh==2&&!memcmp(pStartCh,"if",     2))       tk=addTk(IF);
+                else if (nCh==3&&!memcmp(pStartCh,"int",    3))      tk=addTk(INT);
+                else if (nCh==6&&!memcmp(pStartCh,"return", 6))   tk=addTk(RETURN);
+                else if (nCh==6&&!memcmp(pStartCh,"struct", 6))   tk=addTk(STRUCT);
+                else if (nCh==4&&!memcmp(pStartCh,"void",   4))     tk=addTk(VOID);
+                else if (nCh==5&&!memcmp(pStartCh,"while",  5))    tk=addTk(WHILE);
                 // … all keywords …
         
                 else{ // if no keyword, then it is an ID
@@ -257,16 +260,34 @@ int getNextToken() {
     }
 }
 
-void showTokens () {
+void showTokens (const char outputPath[]) {
+    FILE *outputStream;
     Token *current = tokens;
 
+    if (strcmp(outputPath, "stdout") == 0)
+        outputStream = stdout;
+    else{
+        outputStream = fopen(outputPath, "w");
+        if (outputStream == NULL)
+            err("Can not access lexical output file.\n"); 
+    }
+
     while (current != NULL) {
-        printf("%d  ", current->code);
+        fprintf(outputStream, "%d  ", current->code);
         current = current->next;
     }
+    fputc('\n', outputStream);
 }
 
-
+void lexicalAnalysis (char *fileContent, char *outputPath){
+    pCrtCh = fileContent;
+    while (1) {
+        int output = getNextToken();
+        if (output == END) break; 
+    }
+    showTokens(outputPath);
+    free(fileContent);
+}
 
 
 #endif

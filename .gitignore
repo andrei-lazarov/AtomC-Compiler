@@ -1,3 +1,2 @@
-## ignore compiled executable ##
-
 compiler
+.vscode

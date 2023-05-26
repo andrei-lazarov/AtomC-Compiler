@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "lexicalanalyzer.h": "c"
+        "lexicalanalyzer.h": "c",
+        "stdarg.h": "c",
+        "token.h": "c",
+        "typeinfo": "c"
     }
 }
