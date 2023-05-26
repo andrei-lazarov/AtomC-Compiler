@@ -1,2 +1,4 @@
 compiler
 .vscode
+*.txt
+*.out
